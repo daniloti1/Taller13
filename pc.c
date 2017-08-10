@@ -13,5 +13,14 @@ int main(int argc, char ** argv){
 <total_items> \n");
 
 		exit(1);
+	}
+
+	int productores = argv[1];
+	int consumidores = argv[3];
+	int tamCola = argv[5];
+	int tiempoConsumo = argv[4];
+	int tiempoProduccion = argv[2];
+
+	printf("");
 
 }
