@@ -22,47 +22,69 @@ typedef struct _apy {
 
 void * funcionProd(void * est) {
 	apy * estructura = (apy *) est;	
-	while ((*(estructura->total) > 0)) {
 	
+	while ((*(estructura->total) > 0)) {
+		
+		
+		usleep(estructura->tiempoProd);
+
 		pthread_mutex_lock(&miMutex);
+		if ((*(estructura->total) <= 0)) {
+
+			pthread_mutex_unlock(&miMutex);
+			return NULL;
+		}
+
 		while(!(*(estructura->cola) < estructura->tamCola)) {
+
+			pthread_cond_broadcast(&cv_c);
 			pthread_cond_wait(&cv_p, &miMutex);
 		}	
 
-		usleep(estructura->tiempoProd);
 		*(estructura->cola) = *(estructura->cola) + 1; 
-		//printf("entra al hilo %d\n",*(estructura->cola));
+
 		*(estructura->total) = *(estructura->total) -1;
+		
 		pthread_cond_broadcast(&cv_c);
-		if (*(estructura->total) <= 0) {
-			pthread_cond_broadcast(&cv_c);
-		}
+		printf("Productor %d ha producido 1 item, tamaño de la cola = %d\n",estructura->indice, *(estructura->cola));
+
 		pthread_mutex_unlock(&miMutex);
 
-		printf("Productor %d ha producido 1 item, tamaño de la cola = %d\n",estructura->indice, *(estructura->cola));
+		
+		
+
+		
 	}
+
+	pthread_cond_broadcast(&cv_c);
+
 	return NULL;
 }
 
 void * funcionCons(void * est) {
 	apy * estructura = (apy *) est;
-	pthread_mutex_lock(&miMutex);
-	while(!(*(estructura->cola) > 0)) {
-		pthread_cond_wait(&cv_c, &miMutex);
-	}
-	pthread_mutex_unlock(&miMutex);
-	while ((*(estructura->cola) > 0)) {
-		
+	while ((*(estructura->total) > 0) || (*(estructura->cola) > 0)) {
 		pthread_mutex_lock(&miMutex);
-		while(!(*(estructura->cola) > 0)) {
+		if ((*(estructura->total) <= 0) && *(estructura->cola) <= 0) {
+		
+			return NULL;
+		}
+
+		while(*(estructura->cola) <= 0 && *(estructura->total) > 0) {
+
+			pthread_cond_broadcast(&cv_p);
 			pthread_cond_wait(&cv_c, &miMutex);
 		}
-		usleep(estructura->tiempoCons);	
+		
+		
 		*(estructura->cola) = *(estructura->cola) - 1;
 		pthread_cond_broadcast(&cv_p);
-		pthread_mutex_unlock(&miMutex);
 
 		printf("Consumidor %d ha consumido 1 item, tamaño de la cola = %d\n",estructura->indice, *(estructura->cola));
+
+		pthread_mutex_unlock(&miMutex);
+		usleep(estructura->tiempoCons);	
+
 	}
 
 	return NULL;
