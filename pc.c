@@ -66,18 +66,23 @@ void * funcionCons(void * est) {
 	while ((*(estructura->total) > 0) || (*(estructura->cola) > 0)) {
 		pthread_mutex_lock(&miMutex);
 		if ((*(estructura->total) <= 0) && *(estructura->cola) <= 0) {
-		
+			//pthread_mutex_unlock(&miMutex);
 			return NULL;
 		}
+		
 
-		while(*(estructura->cola) <= 0 && *(estructura->total) > 0) {
-
+		while(*(estructura->cola) <= 0) {			
 			pthread_cond_broadcast(&cv_p);
+			if ((*(estructura->total) <= 0) && *(estructura->cola) <= 0) {
+				pthread_mutex_unlock(&miMutex);
+				return NULL;
+			}
 			pthread_cond_wait(&cv_c, &miMutex);
 		}
 		
-		
-		*(estructura->cola) = *(estructura->cola) - 1;
+		if (*(estructura->cola) > 0) {
+			*(estructura->cola) = *(estructura->cola) - 1;
+		}
 		pthread_cond_broadcast(&cv_p);
 
 		printf("Consumidor %d ha consumido 1 item, tamaño de la cola = %d\n",estructura->indice, *(estructura->cola));
